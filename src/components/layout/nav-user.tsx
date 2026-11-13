@@ -1,6 +1,6 @@
-import { ChevronsUpDown, LogOut, Shield } from 'lucide-react'
+import { ChevronsUpDown, LogOut, Shield, User as UserIcon } from 'lucide-react'
 import useDialogState from '@/hooks/use-dialog-state'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,18 +16,23 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { SignOutDialog } from '@/components/sign-out-dialog'
+import { useAuthStore } from '@/stores/auth-store'
 
-type NavUserProps = {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}
-
-export function NavUser({ user }: NavUserProps) {
+export function NavUser() {
   const { isMobile } = useSidebar()
   const [open, setOpen] = useDialogState()
+  const { user, perfil } = useAuthStore()
+
+  const nombre = perfil?.nombre || user?.email?.split('@')[0] || 'Usuario'
+  const email = user?.email || 'admin@proventas.pe'
+  const esAdmin = perfil?.rol === 'admin'
+  const rolTexto = esAdmin ? 'Administrador(a)' : 'Operador(a)'
+  const iniciales = nombre
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('') || 'U'
 
   return (
     <>
@@ -40,15 +45,14 @@ export function NavUser({ user }: NavUserProps) {
                 className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
                 <Avatar className='h-8 w-8 rounded-lg'>
-                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className='rounded-lg bg-primary/10 text-primary font-semibold text-xs'>
-                    AD
+                    {iniciales}
                   </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-start text-sm leading-tight'>
-                  <span className='truncate font-semibold'>{user.name}</span>
+                  <span className='truncate font-semibold'>{nombre}</span>
                   <span className='truncate text-xs text-muted-foreground'>
-                    {user.email}
+                    {email}
                   </span>
                 </div>
                 <ChevronsUpDown className='ms-auto size-4' />
@@ -63,23 +67,26 @@ export function NavUser({ user }: NavUserProps) {
               <DropdownMenuLabel className='p-0 font-normal'>
                 <div className='flex items-center gap-2 px-1 py-1.5 text-start text-sm'>
                   <Avatar className='h-8 w-8 rounded-lg'>
-                    <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback className='rounded-lg bg-primary/10 text-primary font-semibold text-xs'>
-                      AD
+                      {iniciales}
                     </AvatarFallback>
                   </Avatar>
                   <div className='grid flex-1 text-start text-sm leading-tight'>
-                    <span className='truncate font-semibold'>{user.name}</span>
+                    <span className='truncate font-semibold'>{nombre}</span>
                     <span className='truncate text-xs text-muted-foreground'>
-                      {user.email}
+                      {email}
                     </span>
                   </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className='px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5'>
-                <Shield className='size-3.5 text-primary' />
-                <span>Rol: Administradora</span>
+                {esAdmin ? (
+                  <Shield className='size-3.5 text-primary' />
+                ) : (
+                  <UserIcon className='size-3.5 text-primary' />
+                )}
+                <span>Rol: {rolTexto}</span>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem

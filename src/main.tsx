@@ -1,14 +1,14 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
-import { AxiosError } from 'axios'
 import {
+  MutationCache,
   QueryCache,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/lib/supabase'
 import { handleServerError } from '@/lib/handle-server-error'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
@@ -18,62 +18,54 @@ import { routeTree } from './routeTree.gen'
 // Styles
 import './styles/index.css'
 
-const queryClient = new QueryClient({
+function isAuthOrForbiddenError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const err = error as { status?: number; statusCode?: number; code?: string }
+  const status = err.status ?? err.statusCode
+  return status === 401 || status === 403 || err.code === '42501'
+}
+
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // eslint-disable-next-line no-console
-        if (import.meta.env.DEV) console.log({ failureCount, error })
-
-        if (failureCount >= 0 && import.meta.env.DEV) return false
-        if (failureCount > 3 && import.meta.env.PROD) return false
-
-        return !(
-          error instanceof AxiosError &&
-          [401, 403].includes(error.response?.status ?? 0)
-        )
+        // No reintentar en errores de autenticación o permisos (401, 403, 42501)
+        if (isAuthOrForbiddenError(error)) return false
+        // Límite de reintentos
+        if (failureCount >= 2) return false
+        return true
       },
-      refetchOnWindowFocus: import.meta.env.PROD,
-      staleTime: 10 * 1000, // 10s
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 2, // 2 minutos
     },
     mutations: {
       onError: (error) => {
         handleServerError(error)
-
-        if (error instanceof AxiosError) {
-          if (error.response?.status === 304) {
-            toast.error('Content not modified!')
-          }
-        }
       },
     },
   },
   queryCache: new QueryCache({
     onError: (error) => {
-      if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
-          toast.error('Session expired!')
-          useAuthStore.getState().auth.reset()
-          const redirect = `${router.history.location.href}`
-          router.navigate({ to: '/sign-in', search: { redirect } })
-        }
-        if (error.response?.status === 500) {
-          toast.error('Internal Server Error!')
-          // Only navigate to error page in production to avoid disrupting HMR in development
-          if (import.meta.env.PROD) {
-            router.navigate({ to: '/500' })
-          }
-        }
-        if (error.response?.status === 403) {
-          // router.navigate("/forbidden", { replace: true });
-        }
+      handleServerError(error)
+
+      const err = error as { status?: number; statusCode?: number }
+      const status = err?.status ?? err?.statusCode
+      if (status === 401) {
+        useAuthStore.getState().signOut()
+        const redirect = `${router.history.location.href}`
+        router.navigate({ to: '/login', search: { redirect } })
       }
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      handleServerError(error)
     },
   }),
 })
 
 // Create a new router instance
-const router = createRouter({
+export const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
@@ -86,6 +78,18 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
+
+// Sincronizar estado de sesión de Supabase
+supabase.auth.onAuthStateChange(async (event, session) => {
+  const store = useAuthStore.getState()
+  store.setSession(session)
+
+  if (event === 'SIGNED_IN' && session?.user) {
+    await store.fetchPerfil(session.user.id)
+  } else if (event === 'SIGNED_OUT') {
+    store.setPerfil(null)
+  }
+})
 
 // Render the app
 const rootElement = document.getElementById('root')!

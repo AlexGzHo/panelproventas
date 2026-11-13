@@ -1,24 +1,26 @@
+import type { AuthError, Session, User } from '@supabase/supabase-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, type RenderResult } from 'vitest-browser-react'
 import { type Locator, userEvent } from 'vitest/browser'
 import { UserAuthForm } from './user-auth-form'
-
-const FORM_MESSAGES = {
-  emailEmpty: 'Please enter your email.',
-  passwordEmpty: 'Please enter your password.',
-  passwordShort: 'Password must be at least 7 characters long.',
-} as const
+import { supabase } from '@/lib/supabase'
 
 const navigate = vi.fn()
-const setUserMock = vi.fn()
-const setAccessTokenMock = vi.fn()
+const setSessionMock = vi.fn()
+const fetchPerfilMock = vi.fn().mockResolvedValue(null)
+
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: vi.fn(),
+    },
+  },
+}))
 
 vi.mock('@/stores/auth-store', () => ({
   useAuthStore: () => ({
-    auth: {
-      setUser: setUserMock,
-      setAccessToken: setAccessTokenMock,
-    },
+    setSession: setSessionMock,
+    fetchPerfil: fetchPerfilMock,
   }),
 }))
 
@@ -44,11 +46,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-vi.mock('@/lib/utils', async (orig) => ({
-  ...(await orig()),
-  sleep: vi.fn(() => Promise.resolve()),
-}))
-
 describe('UserAuthForm', () => {
   describe('Rendering without redirectTo', () => {
     let screen: RenderResult
@@ -60,10 +57,14 @@ describe('UserAuthForm', () => {
     beforeEach(async () => {
       vi.clearAllMocks()
       screen = await render(<UserAuthForm />)
-      emailInput = screen.getByRole('textbox', { name: /^Email$/i })
-      passwordInput = screen.getByLabelText(/^Password$/i)
-      signInButton = screen.getByRole('button', { name: /^Sign in$/i })
-      forgotPasswordLink = screen.getByText(/^Forgot password\?$/i)
+      emailInput = screen.getByRole('textbox', {
+        name: /correo electrónico/i,
+      })
+      passwordInput = screen.getByLabelText(/contraseña/i)
+      signInButton = screen.getByRole('button', {
+        name: /iniciar sesión/i,
+      })
+      forgotPasswordLink = screen.getByText(/¿olvidaste tu contraseña\?/i)
     })
 
     it('renders fields, submit button, and forgot password link', async () => {
@@ -77,57 +78,95 @@ describe('UserAuthForm', () => {
       await userEvent.click(signInButton)
 
       await expect
-        .element(screen.getByText(FORM_MESSAGES.emailEmpty))
+        .element(screen.getByText(/ingresa tu correo electrónico/i))
         .toBeInTheDocument()
       await expect
-        .element(screen.getByText(FORM_MESSAGES.passwordEmpty))
+        .element(screen.getByText(/ingresa tu contraseña/i))
         .toBeInTheDocument()
     })
 
     it('authenticates and navigates to default route on success', async () => {
-      await userEvent.fill(emailInput, 'a@b.com')
-      await userEvent.fill(passwordInput, '1234567')
+      vi.mocked(supabase.auth.signInWithPassword).mockResolvedValueOnce({
+        data: {
+          session: {
+            user: { id: 'user-123', email: 'admin@proventas.pe' },
+          } as unknown as Session,
+          user: { id: 'user-123', email: 'admin@proventas.pe' } as unknown as User,
+        },
+        error: null,
+      })
+
+      await userEvent.fill(emailInput, 'admin@proventas.pe')
+      await userEvent.fill(passwordInput, 'secreto123')
 
       await userEvent.click(signInButton)
 
-      await vi.waitFor(() => expect(setUserMock).toHaveBeenCalledOnce())
-      expect(setUserMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          email: 'a@b.com',
-          accountNo: expect.any(String),
-          role: expect.any(Array),
-          exp: expect.any(Number),
+      await vi.waitFor(() => {
+        expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+          email: 'admin@proventas.pe',
+          password: 'secreto123',
         })
-      )
-      expect(setAccessTokenMock).toHaveBeenCalledOnce()
-      expect(setAccessTokenMock).toHaveBeenCalledWith('mock-access-token')
+      })
 
-      await vi.waitFor(() =>
+      await vi.waitFor(() => {
+        expect(setSessionMock).toHaveBeenCalledOnce()
         expect(navigate).toHaveBeenCalledWith({ to: '/', replace: true })
-      )
+      })
+    })
+
+    it('shows error alert on invalid credentials', async () => {
+      vi.mocked(supabase.auth.signInWithPassword).mockResolvedValueOnce({
+        data: { session: null, user: null },
+        error: {
+          name: 'AuthApiError',
+          message: 'Invalid login credentials',
+          status: 400,
+        } as unknown as AuthError,
+      })
+
+      await userEvent.fill(emailInput, 'err@proventas.pe')
+      await userEvent.fill(passwordInput, 'malaclave')
+      await userEvent.click(signInButton)
+
+      await vi.waitFor(() => {
+        expect(
+          screen.getByText(/correo o contraseña incorrectos/i)
+        ).toBeInTheDocument()
+      })
+      expect(navigate).not.toHaveBeenCalled()
     })
   })
 
-  it('navigates to redirectTo when provided', async () => {
+  it('navigates to redirectTo when provided on success', async () => {
     vi.clearAllMocks()
 
-    const { getByRole, getByLabelText } = await render(
-      <UserAuthForm redirectTo='/settings' />
+    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValueOnce({
+      data: {
+        session: {
+          user: { id: 'user-123', email: 'admin@proventas.pe' },
+        } as unknown as Session,
+        user: { id: 'user-123', email: 'admin@proventas.pe' } as unknown as User,
+      },
+      error: null,
+    })
+
+    const screen = await render(<UserAuthForm redirectTo='/ventas' />)
+
+    await userEvent.fill(
+      screen.getByRole('textbox', { name: /correo electrónico/i }),
+      'admin@proventas.pe'
+    )
+    await userEvent.fill(screen.getByLabelText(/contraseña/i), 'secreto123')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /iniciar sesión/i })
     )
 
-    await userEvent.fill(getByRole('textbox', { name: /Email/i }), 'a@b.com')
-    await userEvent.fill(getByLabelText('Password'), '1234567')
-
-    await userEvent.click(getByRole('button', { name: /Sign in/i }))
-
-    await vi.waitFor(() => expect(setUserMock).toHaveBeenCalledOnce())
-    expect(setAccessTokenMock).toHaveBeenCalledOnce()
-
-    await vi.waitFor(() =>
+    await vi.waitFor(() => {
       expect(navigate).toHaveBeenCalledWith({
-        to: '/settings',
+        to: '/ventas',
         replace: true,
       })
-    )
+    })
   })
 })

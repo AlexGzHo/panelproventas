@@ -4,13 +4,11 @@ import { userEvent } from 'vitest/browser'
 import { SignOutDialog } from './sign-out-dialog'
 
 const navigate = vi.fn()
-const reset = vi.fn()
-
-const MOCK_HREF = 'https://app.test/dashboard?tab=1'
+const signOut = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@/stores/auth-store', () => ({
   useAuthStore: () => ({
-    auth: { reset },
+    signOut,
   }),
 }))
 
@@ -19,7 +17,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...actual,
     useNavigate: () => navigate,
-    useLocation: () => ({ href: MOCK_HREF }),
   }
 })
 
@@ -28,29 +25,28 @@ describe('SignOutDialog', () => {
     vi.clearAllMocks()
   })
 
-  it('calls auth.reset and navigates to sign-in with current location as redirect', async () => {
+  it('calls signOut and navigates to login', async () => {
     const { getByRole } = await render(
       <SignOutDialog open onOpenChange={vi.fn()} />
     )
 
     await userEvent.click(getByRole('button', { name: /^Cerrar sesión$/i }))
 
-    expect(reset).toHaveBeenCalledOnce()
+    expect(signOut).toHaveBeenCalledOnce()
     expect(navigate).toHaveBeenCalledWith({
-      to: '/sign-in',
-      search: { redirect: MOCK_HREF },
+      to: '/login',
       replace: true,
     })
   })
 
-  it('does not call reset or navigate when Cancel is clicked', async () => {
+  it('does not call signOut or navigate when Cancel is clicked', async () => {
     const { getByRole } = await render(
       <SignOutDialog open onOpenChange={vi.fn()} />
     )
 
     await userEvent.click(getByRole('button', { name: /^Cancelar$/i }))
 
-    expect(reset).not.toHaveBeenCalled()
+    expect(signOut).not.toHaveBeenCalled()
     expect(navigate).not.toHaveBeenCalled()
   })
 })

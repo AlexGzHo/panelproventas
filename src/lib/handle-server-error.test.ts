@@ -1,4 +1,3 @@
-import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleServerError } from './handle-server-error'
 
@@ -15,76 +14,60 @@ beforeEach(() => {
 })
 
 describe('handleServerError', () => {
-  it('shows a generic message when the error is not recognised', () => {
-    handleServerError(new Error('network'))
-
-    expect(toastError).toHaveBeenCalledWith('Something went wrong!')
+  it('translates 401 session expiration error to Spanish', () => {
+    handleServerError({ status: 401 })
+    expect(toastError).toHaveBeenCalledWith('Sesión expirada o no autorizada.')
   })
 
-  it('maps a plain object with status 204 to the no-content message', () => {
-    handleServerError({ status: 204 })
+  it('translates 403 or code 42501 permission error to Spanish', () => {
+    handleServerError({ code: '42501' })
+    expect(toastError).toHaveBeenCalledWith(
+      'No tienes permisos suficientes para realizar esta acción.'
+    )
 
-    expect(toastError).toHaveBeenCalledWith('No content.')
+    handleServerError({ status: 403 })
+    expect(toastError).toHaveBeenCalledWith(
+      'No tienes permisos suficientes para realizar esta acción.'
+    )
   })
 
-  it('prefers the API title when the error is an Axios error with response data', () => {
-    const error = new AxiosError('Bad request')
-    error.response = {
-      status: 422,
-      data: { title: 'Validation failed' },
-    } as AxiosError['response']
-
-    handleServerError(error)
-
-    expect(toastError).toHaveBeenCalledWith('Validation failed')
+  it('translates code 23505 unique constraint violation to Spanish', () => {
+    handleServerError({ code: '23505' })
+    expect(toastError).toHaveBeenCalledWith(
+      'Ya existe un registro con estos datos.'
+    )
   })
 
-  it('falls back to the generic message when Axios response has no data.title', () => {
-    const error = new AxiosError('Request failed')
-    error.response = {
-      status: 500,
-      data: {},
-    } as AxiosError['response']
-
-    handleServerError(error)
-
-    expect(toastError).toHaveBeenCalledWith('Something went wrong!')
+  it('translates network failure messages to Spanish', () => {
+    handleServerError(new Error('Failed to fetch'))
+    expect(toastError).toHaveBeenCalledWith(
+      'Error de red. Verifica tu conexión a internet.'
+    )
   })
 
-  it('falls back to the generic message when Axios data.title is an empty string', () => {
-    const error = new AxiosError('Bad request')
-    error.response = {
-      status: 400,
-      data: { title: '' },
-    } as AxiosError['response']
-
-    handleServerError(error)
-
-    expect(toastError).toHaveBeenCalledWith('Something went wrong!')
+  it('shows generic Spanish error message for unrecognized error', () => {
+    handleServerError(null)
+    expect(toastError).toHaveBeenCalledWith('Ha ocurrido un error inesperado.')
   })
 
-  it('logs the error to the console in development', () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('logs the error to console.error in development', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const err = new Error('logged')
 
     handleServerError(err)
 
-    expect(log).toHaveBeenCalledTimes(1)
-    expect(log).toHaveBeenCalledWith(err)
-
-    log.mockRestore()
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    errorSpy.mockRestore()
   })
 
-  it('does not log the error to the console in production', () => {
+  it('does not log to console in production', () => {
     vi.stubEnv('DEV', false)
-
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const err = new Error('not logged')
 
     handleServerError(err)
 
-    expect(log).not.toHaveBeenCalled()
-
-    log.mockRestore()
+    expect(errorSpy).not.toHaveBeenCalled()
+    errorSpy.mockRestore()
   })
 })

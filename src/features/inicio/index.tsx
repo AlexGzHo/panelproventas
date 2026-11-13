@@ -135,7 +135,7 @@ export function Inicio() {
             <div className='text-2xl font-bold tracking-tight tabular-nums text-foreground'>
               0
             </div>
-            <p className='text-xs text-estado-por-vencer font-medium mt-1 flex items-center gap-1'>
+            <p className='text-xs text-estado-por-vencer-text font-medium mt-1 flex items-center gap-1'>
               <span>Requieren renovación próxima</span>
             </p>
           </CardContent>

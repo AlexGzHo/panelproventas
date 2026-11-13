@@ -28,7 +28,7 @@
   --input: #e2e8f0;
   --ring: #3730a3;
 
-  /* Colores semánticos reservados estrictamente para estados y variaciones */
+  /* Colores semánticos para fondos suaves e íconos */
   --estado-vigente: #059669;
   --estado-vigente-bg: #ecfdf5;
   --estado-por-vencer: #d97706;
@@ -39,6 +39,13 @@
   --estado-renovada-bg: #f8fafc;
   --estado-anulada: #64748b;
   --estado-anulada-bg: #f8fafc;
+
+  /* Tokens separados para texto de estado (cumplen >= 4.5:1 sobre tarjeta blanca) */
+  --estado-vigente-text: #047857;     /* 5.48:1 */
+  --estado-por-vencer-text: #b45309;  /* 5.02:1 */
+  --estado-vencida-text: #dc2626;     /* 4.83:1 */
+  --estado-renovada-text: #4b5563;    /* 7.56:1 */
+  --estado-anulada-text: #4b5563;     /* 7.56:1 */
 
   /* Destructivo para modales de confirmación */
   --destructive: #dc2626;
@@ -88,7 +95,7 @@
   --input: #1e293b;
   --ring: #818cf8;
 
-  /* Colores semánticos modo oscuro */
+  /* Colores semánticos para fondos e íconos en modo oscuro */
   --estado-vigente: #34d399;
   --estado-vigente-bg: rgba(5, 150, 105, 0.15);
   --estado-por-vencer: #fbbf24;
@@ -99,6 +106,13 @@
   --estado-renovada-bg: rgba(100, 116, 139, 0.15);
   --estado-anulada: #94a3b8;
   --estado-anulada-bg: rgba(100, 116, 139, 0.15);
+
+  /* Tokens de texto de estado en modo oscuro (cumplen >= 4.5:1 sobre tarjeta oscura #111827) */
+  --estado-vigente-text: #34d399;     /* 9.23:1 */
+  --estado-por-vencer-text: #fbbf24;  /* 10.63:1 */
+  --estado-vencida-text: #f87171;     /* 6.41:1 */
+  --estado-renovada-text: #94a3b8;    /* 6.92:1 */
+  --estado-anulada-text: #94a3b8;     /* 6.92:1 */
 
   --destructive: #f87171;
   --destructive-foreground: #0b0f17;
@@ -147,14 +161,19 @@
 
   --color-estado-vigente: var(--estado-vigente);
   --color-estado-vigente-bg: var(--estado-vigente-bg);
+  --color-estado-vigente-text: var(--estado-vigente-text);
   --color-estado-por-vencer: var(--estado-por-vencer);
   --color-estado-por-vencer-bg: var(--estado-por-vencer-bg);
+  --color-estado-por-vencer-text: var(--estado-por-vencer-text);
   --color-estado-vencida: var(--estado-vencida);
   --color-estado-vencida-bg: var(--estado-vencida-bg);
+  --color-estado-vencida-text: var(--estado-vencida-text);
   --color-estado-renovada: var(--estado-renovada);
   --color-estado-renovada-bg: var(--estado-renovada-bg);
+  --color-estado-renovada-text: var(--estado-renovada-text);
   --color-estado-anulada: var(--estado-anulada);
   --color-estado-anulada-bg: var(--estado-anulada-bg);
+  --color-estado-anulada-text: var(--estado-anulada-text);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
