@@ -1,6 +1,6 @@
 # Revisión de seguridad y calidad — Fase 2
 
-Fecha: 13/11/2026. Base: `24628bb` (`main`). Rama: `codex/revision-fase2`.
+Fecha: 13/11/2026. Base: `24628bb` (`main`). Rama: `codex/revision-fase2`. [PR #1](https://github.com/AlexGzHo/panelproventas/pull/1).
 Revisión inicial terminada antes de las correcciones de aplicación. La tabla registra ubicaciones de la base para conservar la trazabilidad.
 
 | ID | Severidad | Archivo:línea (base) | Problema | Cómo lo comprobé | Corrección recomendada |
@@ -14,11 +14,9 @@ Revisión inicial terminada antes de las correcciones de aplicación. La tabla r
 | UX-01 | Baja | src/features/auth/sign-in/components/user-auth-form.tsx:144 | Recuperar contraseña queda fuera de la navegación por tabulador. | `tabIndex={-1}` en enlace. | Eliminar exclusión y comprobar teclado. Antigravity. |
 | CODE-01 | Baja | src/routeTree.gen.ts:32 | 16 `as any` en archivo generado por TanStack. | `rg` y cabecera «no editar». Sin `any` de aplicación detectado. | Evaluar generador/configuración; no editar generado manualmente. Antigravity. |
 | DB-01 | Baja | supabase/migrations/20261111000000_init_proventas.sql:62 | Trigger security definer `crear_perfil` conserva EXECUTE por defecto de PUBLIC. Esquema privado y retorno trigger limitan explotación; no es bypass observado. | Revisé grants y firma; helpers es_miembro/es_admin sí revocan PUBLIC/anon. | Proponer migración NUEVA que revoque EXECUTE de PUBLIC/anon/authenticated en crear_perfil(); no aplicar en esta revisión. |
-
 | CODE-02 | Baja | .agents/skills/shadcn/assets/showcase/state-matrix.tsx:62 | Warning de Fast Refresh en un ejemplo de skill. | `pnpm run lint`, 0 errores y 1 warning. | Separar export de constantes del ejemplo si se mantiene; Antigravity. |
 | CODE-03 | Baja | vite.config.ts:21 | `__dirname` no será compatible con el futuro configLoader native por defecto. | Aviso de Vite al compilar. | Migrar a import.meta.dirname cuando corresponda; Antigravity. |
 | PERF-01 | Baja | src/main.tsx:1 | Bundle inicial supera aviso de 500 kB minificado (622,99 kB; gzip 182,59 kB). No se midieron Core Web Vitals. | Salida de `pnpm run build`. | Analizar partición y dependencias antes de fase de rendimiento; Antigravity. |
-
 | SEC-01 | Media | .gitignore:37 | Se ignoran nombres estándar `.env` y `.env.*`, pero no TODO el prefijo `.env*` pedido (ej. `.env-backup`, `.envrc`). No hay secretos detectados en ellos. | `git check-ignore -v .env-backup .envrc` no encuentra regla. | Usar `.env*` y mantener `!.env.example`, o acordar lista explícita. Antigravity. |
 
 ## Dependencias
