@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -17,7 +19,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { PasswordInput } from '@/components/password-input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const resetPasswordSchema = z
   .object({
@@ -40,6 +41,7 @@ export function ResetPasswordForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const navigate = useNavigate()
+  const canRecover = useAuthStore((state) => state.canRecoverPassword())
 
   const form = useForm<z.infer<typeof resetPasswordSchema>>({
     resolver: zodResolver(resetPasswordSchema),
@@ -50,6 +52,10 @@ export function ResetPasswordForm({
   })
 
   async function onSubmit(data: z.infer<typeof resetPasswordSchema>) {
+    if (!useAuthStore.getState().canRecoverPassword()) {
+      setErrorMessage('Solicita un nuevo enlace de recuperación.')
+      return
+    }
     setIsLoading(true)
     setErrorMessage(null)
 
@@ -59,7 +65,8 @@ export function ResetPasswordForm({
       })
 
       if (error) {
-        let msg = 'No se pudo actualizar la contraseña. El enlace puede haber caducado.'
+        let msg =
+          'No se pudo actualizar la contraseña. El enlace puede haber caducado.'
         if (error.message.toLowerCase().includes('same_password')) {
           msg = 'La nueva contraseña no puede ser igual a la anterior.'
         }
@@ -68,13 +75,15 @@ export function ResetPasswordForm({
         return
       }
 
+      useAuthStore.getState().finishRecovery()
       setIsSuccess(true)
       toast.success('Contraseña actualizada correctamente')
       setTimeout(() => {
         navigate({ to: '/', replace: true })
       }, 1500)
     } catch {
-      const fallback = 'Ocurrió un error inesperado al actualizar la contraseña.'
+      const fallback =
+        'Ocurrió un error inesperado al actualizar la contraseña.'
       setErrorMessage(fallback)
       toast.error(fallback)
     } finally {
@@ -90,6 +99,19 @@ export function ResetPasswordForm({
           Tu contraseña ha sido actualizada. Redirigiendo al panel...
         </AlertDescription>
       </Alert>
+    )
+  }
+
+  if (!canRecover) {
+    return (
+      <div className='grid gap-4' role='status'>
+        <p>
+          Necesitas un enlace de recuperación válido para cambiar tu contraseña.
+        </p>
+        <Button asChild className='min-h-11'>
+          <Link to='/forgot-password'>Solicitar enlace de recuperación</Link>
+        </Button>
+      </div>
     )
   }
 
@@ -150,12 +172,12 @@ export function ResetPasswordForm({
         <Button className='mt-2 w-full font-medium' disabled={isLoading}>
           {isLoading ? (
             <>
-              <Loader2 className='size-4 animate-spin mr-2' />
+              <Loader2 className='mr-2 size-4 animate-spin' />
               Guardando contraseña...
             </>
           ) : (
             <>
-              <KeyRound className='size-4 mr-2' />
+              <KeyRound className='mr-2 size-4' />
               Guardar nueva contraseña
             </>
           )}
