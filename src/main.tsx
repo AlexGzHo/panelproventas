@@ -8,8 +8,9 @@ import {
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/auth-store'
-import { supabase } from '@/lib/supabase'
+import { registerAuthQueryClient } from '@/lib/auth-cache'
 import { handleServerError } from '@/lib/handle-server-error'
+import { supabase } from '@/lib/supabase'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
@@ -79,15 +80,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Sincronizar estado de sesión de Supabase
-supabase.auth.onAuthStateChange(async (event, session) => {
-  const store = useAuthStore.getState()
-  store.setSession(session)
+// Register before any route can load private data.
+registerAuthQueryClient(queryClient)
 
-  if (event === 'SIGNED_IN' && session?.user) {
-    await store.fetchPerfil(session.user.id)
-  } else if (event === 'SIGNED_OUT') {
-    store.setPerfil(null)
+// Supabase callbacks run under the Auth lock: never await another SDK call here.
+supabase.auth.onAuthStateChange((event, session) => {
+  useAuthStore.getState().handleAuthEvent(event, session)
+  if (event !== 'INITIAL_SESSION' && event !== 'TOKEN_REFRESHED') {
+    setTimeout(() => {
+      void router.invalidate()
+    }, 0)
   }
 })
 

@@ -1,2 +1,14 @@
 allowBuilds:
   esbuild: true
+# Security fixes for transitive packages; retain their existing major APIs.
+# Existing parent ranges/locks still select vulnerable releases.
+overrides:
+  'minimatch@9.0.5': 9.0.7
+  'picomatch@2.3.1': 2.3.2
+  'lodash-es@4.17.21': 4.18.1
+  'ws@8.20.0': 8.21.0
+  'brace-expansion@2.0.2': 2.1.6
+  'brace-expansion@5.0.5': 5.0.11
+  'browserslist@4.25.0': 4.28.7
+  'smol-toml@1.6.1': 1.7.1
+  'source-map-js@1.2.1': 1.2.2

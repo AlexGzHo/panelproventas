@@ -1,0 +1,78 @@
+[
+  {
+    "width": 1280,
+    "test": "redirect",
+    "payload": "https://ejemplo.com",
+    "finalPath": "/",
+    "externalNavigation": false
+  },
+  {
+    "width": 1280,
+    "test": "redirect",
+    "payload": "//ejemplo.com",
+    "finalPath": "/ejemplo.com",
+    "externalNavigation": false
+  },
+  {
+    "width": 1280,
+    "test": "missing-profile-existing-medium-finding",
+    "panelVisible": true,
+    "accessDeniedScreen": false
+  },
+  {
+    "width": 1280,
+    "test": "valid-password-recovery",
+    "sdkEvent": true,
+    "passwordUpdates": 1
+  },
+  {
+    "width": 1280,
+    "test": "reset-directo",
+    "formHidden": true,
+    "recoveryLink": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 1280,
+    "test": "protected-without-session",
+    "finalPath": "/login"
+  },
+  {
+    "width": 390,
+    "test": "redirect",
+    "payload": "https://ejemplo.com",
+    "finalPath": "/",
+    "externalNavigation": false
+  },
+  {
+    "width": 390,
+    "test": "redirect",
+    "payload": "//ejemplo.com",
+    "finalPath": "/ejemplo.com",
+    "externalNavigation": false
+  },
+  {
+    "width": 390,
+    "test": "missing-profile-existing-medium-finding",
+    "panelVisible": true,
+    "accessDeniedScreen": false
+  },
+  {
+    "width": 390,
+    "test": "valid-password-recovery",
+    "sdkEvent": true,
+    "passwordUpdates": 1
+  },
+  {
+    "width": 390,
+    "test": "reset-directo",
+    "formHidden": true,
+    "recoveryLink": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 390,
+    "test": "protected-without-session",
+    "finalPath": "/login"
+  }
+]

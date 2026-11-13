@@ -4,6 +4,15 @@ Registro de cambios y avances por cada fase del proyecto.
 
 ---
 
+## [Revisión Fase 2] — Seguridad y calidad (2026-11-13)
+
+- Corregidos aislamiento de caché/estado entre sesiones, permiso de recuperación y callback bloqueante de Auth.
+- Actualizadas dependencias con avisos altos/críticos; auditoría posterior: 0 altas y 0 críticas. Sin cambios de base de datos.
+- Typecheck, lint (0 errores), 101 pruebas Chromium y build aprobados; evidencia de navegador a 1280/390 px.
+- Pendientes para Antigravity: validador estricto de redirect, pantalla sin perfil, errores de perfil y hallazgos bajos. Detalle en `docs/revisiones/REVISION_FASE2.md`.
+
+---
+
 ## [Fase 2] — Supabase, autenticación, tipos y protección de rutas (2026-11-13)
 
 ### Completado
